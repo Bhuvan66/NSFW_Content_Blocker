@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Twitter Reader</title>
+  <style>
+    body {
+      width: 400px; /* Adjust the width as needed */
+      margin: 0;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <h1>Twitter Reader</h1>
+  <button id="read-tweets">Read Tweets</button>
+  <div>
+    <input type="radio" id="change-lines" name="action" value="change">
+    <label for="change-lines">Change Lines</label> <br>
+    <input type="radio" id="censor-lines" name="action" value="censor">
+    <label for="censor-lines">Censor Lines</label>
+  </div>
+  <div id="output"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
