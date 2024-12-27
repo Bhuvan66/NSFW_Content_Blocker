@@ -1,0 +1,2 @@
+->Uncensor Button *shows uncenceored content on click , the button appears besides the censored tweet*
+->Implied Meaning replacing *censoring based on implied meaning insted of just replacing with stars *
