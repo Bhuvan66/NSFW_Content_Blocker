@@ -10,7 +10,7 @@ document.getElementById("read-tweets").addEventListener("click", () => {
     // Optional: Show a confirmation message
     document.getElementById("output").innerText = "Tweets extracted! Check the console.";
   });
-  
+
    // Prevent popup if the site is not x.com
    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs[0].url.startsWith("chrome://")) {
