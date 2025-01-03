@@ -147,23 +147,26 @@
 //   extractTweets();
 // })();
 // ==================================================
-(function() {
-  // Function to extract and censor tweets from the page
-  function extractTweets() {
-    // Variable to store original tweet data
+
+
+(function () {
+
+  async function extractTweets() {
+
     let originalTweets = [];
 
-    setTimeout(() => {
+    setTimeout(async () => {
       // Select all <article> tags (tweets are typically wrapped in them)
-      const tweetContainers = document.querySelectorAll('article');
+      const tweetContainers = document.querySelectorAll("article");
 
       if (tweetContainers.length === 0) {
-        console.log("No tweets found. The page might not have loaded fully or the structure has changed.");
+        console.log("no tweeetttoooo.");
         return;
       }
 
-      const tweetData = Array.from(tweetContainers).map((tweet) => {
-        // Extract the tweet content (from div[data-testid="tweetText"] or equivalent)
+      // Process all tweets asynchronously and wait for the results
+      const tweetDataPromises = Array.from(tweetContainers).map(async (tweet) => {
+        
         const tweetTextElement = tweet.querySelector('div[data-testid="tweetText"]');
         let tweetText = tweetTextElement ? tweetTextElement.innerText.trim() : null;
 
@@ -172,40 +175,35 @@
           return null;
         }
 
-        // Store original tweet text for uncensoring later
+        // Storin og twt text for uncensoring later
         originalTweets.push({ element: tweetTextElement, originalText: tweetText });
 
-        // List of words to censor (case insensitive)
-        const censoredWords = ["fuck", "badword1", "badword2"]; // Add more words as needed
+      
+        let words = tweetText.split(/\s+/);
+        let censoredText = "";
 
-        // Replace the target words with asterisks (*)
-        let censoredText = tweetText.replace(/\b(?:'|")?(\w+)(?:'|")?\b/g, function(match, word) {
-          // Check if the word is in the censored words list (case insensitive)
-          if (censoredWords.includes(word.toLowerCase())) {
-            return "*".repeat(word.length); // Replace word with asterisks
-          }
-          return match; // Keep the word unchanged if it's not in the censored list
-        });
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          const isNSFW = await checkNSFW(word);
+          censoredText += (i > 0 ? " " : "") + (isNSFW ? "****" : word);
+        }
 
-        // Replace the entire tweet content with the censored text in the HTML element
         tweetTextElement.innerText = censoredText;
-        console.log("Censored tweet text:", tweetTextElement.innerText);
 
-        // Create an uncensor button if not already created
-        if (!tweetTextElement.parentElement.querySelector('.uncensor-button')) {
-          const uncensorButton = document.createElement('button');
-          uncensorButton.innerText = '🚫';
-          uncensorButton.classList.add('uncensor-button');
-          uncensorButton.style.marginLeft = '5px';
-          uncensorButton.style.fontSize = '12px';
-          uncensorButton.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
-          uncensorButton.style.border = 'none';
-          uncensorButton.style.cursor = 'pointer';
-          uncensorButton.style.width = '20px'; // Set width to fit one character
-          uncensorButton.style.height = '20px'; // Set height to fit one character
 
-          // Add event listener for uncensorship action
-          uncensorButton.addEventListener('click', () => {
+        if (!tweetTextElement.parentElement.querySelector(".uncensor-button")) {
+          const uncensorButton = document.createElement("button");
+          uncensorButton.innerText = "🚫";
+          uncensorButton.classList.add("uncensor-button");
+          uncensorButton.style.marginLeft = "5px";
+          uncensorButton.style.fontSize = "12px";
+          uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+          uncensorButton.style.border = "none";
+          uncensorButton.style.cursor = "pointer";
+          uncensorButton.style.width = "20px"; // Set width to fit one character
+          uncensorButton.style.height = "20px"; // Set height to fit one character
+
+          uncensorButton.addEventListener("click", () => {
             if (tweetTextElement.innerText === censoredText) {
               tweetTextElement.innerText = tweetText; // Reveal original text
             } else {
@@ -217,21 +215,22 @@
           tweetTextElement.parentElement.appendChild(uncensorButton);
         }
 
-        // Extract the username (usually in <span> with specific attributes)
+        // Return tweet content, username, and timestamp as an object
         const usernameElement = tweet.querySelector('a[role="link"] span');
         const username = usernameElement ? usernameElement.innerText.trim() : "Unknown";
 
-        // Extract the tweet timestamp (optional)
-        const timestampElement = tweet.querySelector('time');
-        const timestamp = timestampElement ? timestampElement.getAttribute('datetime') : "Unknown time";
+        const timestampElement = tweet.querySelector("time");
+        const timestamp = timestampElement ? timestampElement.getAttribute("datetime") : "Unknown time";
 
-        // Return tweet content, username, and timestamp as an object
         return {
           content: censoredText,
           username: username,
-          timestamp: timestamp
+          timestamp: timestamp,
         };
-      }).filter(tweet => tweet !== null); // Filter out null values (skipped tweets)
+      });
+
+      // Wait for all tweets to be processed and filter out null results
+      const tweetData = (await Promise.all(tweetDataPromises)).filter((tweet) => tweet !== null);
 
       // Log the extracted tweets to the console
       console.log("Extracted Tweets:", tweetData);
@@ -241,27 +240,47 @@
     }, 1000); // Adjust the timeout as needed
   }
 
-  // Function to send tweets to the server
-  function sendTweetsToServer(tweets) {
-    tweets.forEach(tweet => {
-      fetch('http://127.0.0.1:5000/analyze', {
-        method: 'POST',
+  // Function to send words to the server for NSFW classification
+  async function checkNSFW(word) {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/analyze", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ tweets: [{ text: tweet.originalText }] })
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log("Server Response for:", tweet.originalText, data);
-        if (data && data[0].label === "nsfw") {
-          // Handle NSFW flagged tweets separately
-          tweet.element.innerText = "⚠️ NSFW Content Hidden ⚠️"; // Replacing text if tweet is NSFW
-        }
-      })
-      .catch(error => {
-        console.error("Error sending tweet to the server:", error);
+        body: JSON.stringify({ tweets: [{ text: word }] }),
       });
+
+      const data = await response.json();
+      if (data && data[0].label === "nsfw") {
+        return true; // Word is NSFW
+      } else {
+        return false; // Word is safe
+      }
+    } catch (error) {
+      console.error("Error sending word to the server:", error);
+      return false; // In case of error, assume word is safe
+    }
+  }
+
+  // Function to send tweets to the server (if needed for full tweet analysis)
+  function sendTweetsToServer(tweets) {
+    tweets.forEach((tweet) => {
+      fetch("http://127.0.0.1:5000/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tweets: [{ text: tweet.originalText }] }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Server Response for:", tweet.originalText, data);
+          // You can handle NSFW classification at the tweet level here
+        })
+        .catch((error) => {
+          console.error("Error sending tweet to the server:", error);
+        });
     });
   }
 
