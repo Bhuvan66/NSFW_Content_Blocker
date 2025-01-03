@@ -27,20 +27,22 @@
         // Storin og twt text for uncensoring later
         originalTweets.push({ element: tweetTextElement, originalText: tweetText });
 
-      
         let words = tweetText.split(/\s+/);
         let censoredText = "";
+        let hasCensoredWords = false;
 
         for (let i = 0; i < words.length; i++) {
           const word = words[i];
           const isNSFW = await checkNSFW(word);
+          if (isNSFW) {
+            hasCensoredWords = true;
+          }
           censoredText += (i > 0 ? " " : "") + (isNSFW ? "*".repeat(word.length) : word);
         }
 
         tweetTextElement.innerText = censoredText;
 
-
-        if (!tweetTextElement.parentElement.querySelector(".uncensor-button")) {
+        if (hasCensoredWords && !tweetTextElement.parentElement.querySelector(".uncensor-button")) {
           const uncensorButton = document.createElement("button");
           uncensorButton.innerText = "🚫";
           uncensorButton.classList.add("uncensor-button");
