@@ -45,14 +45,30 @@ def analyze_text():
             label = result[0]['label']
             score = result[0]['score']
 
+            common_words = set(['that', 'right', 'favorite', 'reveals', 'artist', 'is', 'now'])
+
             flagged_words = []
             if label == "nsfw":
-                flagged_words = [word for word in text.split() if len(word) > 3]
+                flagged_words = [word for word in text.split() if len(word) > 3 and word.lower() not in common_words]
+
+            # # Adjust the label if below the threshold
+            # if label == "nsfw" and score < 0.955:
+            #     label = "uncertain"
+
+            # Log flagged words for debugging
+            print("Flagged Words for tweet:", text, flagged_words)
+
+            
+            # flagged_words = []
+            # if label == "nsfw":
+            #     flagged_words = [word for word in text.split() if len(word) > 3]
 
 
-            threshold = 0.955
+            threshold = 0.994
             if label == "nsfw" and score < threshold:
                 label = "uncertain"
+            
+            print("Flagged Words for tweet:", text, flagged_words)
 
 
             results.append({
