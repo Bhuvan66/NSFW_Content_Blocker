@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html>
 <head>
   <title>Twitter Reader</title>
@@ -21,6 +21,162 @@
     <label for="censor-lines">Censor Lines</label>
   </div>
   <div id="output"></div>
+  <script src="popup.js"></script>
+</body>
+</html> -->
+
+
+    <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitter Reader</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      color: #d4d4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      border-radius: 6px;
+      /* background-color: ; */
+    }
+
+    .container {
+      background-color: #27272a;
+      color: #d4d4d8;
+      width: 300px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+
+    .title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+
+
+    .options {
+      margin-bottom: 20px;
+      margin-top: 20px;
+    }
+
+    .option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 15px;
+      color: #71717a;
+    }
+
+    .option input {
+      margin-right: 10px;
+    }
+
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+      margin-bottom: 20px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: 0.4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: #1bff13;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    .read-line-button {
+      padding: 10px 20px;
+      background-color: #71717a;
+      color: #e4e4e7;
+      border: 2px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+
+    .read-line-button:hover {
+      background-color:#f43f5e;
+      /* #27272a ; */
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <div class="title">Twitter Reader</div>
+
+    <button class="read-line-button" id="read-tweets">Read tweet</button>
+    
+    <div class="options">
+      <label class="option">
+        <input type="radio" id="change-lines" name="action" value="change-line">
+        Change Line
+      </label>
+      <label class="option">
+        <input type="radio" id="censor-lines" name="action" value="censor-line">
+        Censor Line
+      </label>
+      <label class="option">
+        <input type="radio" id="interpreter" name="action" value="word-interceptor">
+        Interpreter
+      </label>
+    </div>
+    
+    <div>
+      <label class="toggle-switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div id="output"></div>
+    
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>

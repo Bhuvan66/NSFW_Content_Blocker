@@ -10,7 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 try:
-    # Initialize the model and tokenizer for the NSFW classifier
+
     tokenizer = AutoTokenizer.from_pretrained("eliasalbouzidi/distilbert-nsfw-text-classifier")
     model = AutoModelForSequenceClassification.from_pretrained("eliasalbouzidi/distilbert-nsfw-text-classifier")
     textClassifier = TextClassificationPipeline(model=model, tokenizer=tokenizer)
@@ -60,7 +60,7 @@ def analyze_text():
                 label = "uncertain"
 
             results.append({
-                "text": censored_text,  # Send the censored text
+                "text": censored_text,  # Sendin the censored text
                 "label": label,
                 "score": score,
                 "flagged_words": flagged_words
