@@ -1,32 +1,4 @@
-<!-- <!DOCTYPE html>
-<html>
-<head>
-  <title>Twitter Reader</title>
-  <style>
-    body {
-      width: 400px; /* Adjust the width as needed */
-      margin: 0;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-  </style>
-</head>
-<body>
-  <h1>Twitter Reader</h1>
-  <button id="read-tweets">Read Tweets</button>
-  <div>
-    <input type="radio" id="change-lines" name="action" value="change">
-    <label for="change-lines">Change Lines</label> <br>
-    <input type="radio" id="censor-lines" name="action" value="censor">
-    <label for="censor-lines">Censor Lines</label>
-  </div>
-  <div id="output"></div>
-  <script src="popup.js"></script>
-</body>
-</html> -->
-
-
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -54,6 +26,7 @@
       border-radius: 8px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       text-align: center;
+      min-height: 250px;
     }
 
 
@@ -148,11 +121,8 @@
 <body>
 
   <div class="container">
-
     <div class="title">Twitter Reader</div>
-
     <button class="read-line-button" id="read-tweets">Read tweet</button>
-    
     <div class="options">
       <label class="option">
         <input type="radio" id="change-lines" name="action" value="change-line">
@@ -167,16 +137,15 @@
         Interpreter
       </label>
     </div>
-    
     <div>
       <label class="toggle-switch">
-        <input type="checkbox">
+        <input type="checkbox" id="toggle-visibility">
         <span class="slider"></span>
       </label>
     </div>
     <div id="output"></div>
-    
   </div>
+  
   <script src="popup.js"></script>
 </body>
 </html>

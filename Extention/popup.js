@@ -25,7 +25,7 @@ document.getElementById("read-tweets").addEventListener("click", () => {
       },
       (results) => {
         if (results[0].result === "x.com") {
-          // Your code to execute if the site is x.com
+
         } else {
           document.body.innerHTML = ""; // Hide all elements
           document.body.innerText = "This is not X.com";
@@ -33,3 +33,18 @@ document.getElementById("read-tweets").addEventListener("click", () => {
       }
     );
   });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggleSwitch = document.querySelector('.toggle-switch input');
+    const readTweetButton = document.getElementById('read-tweets');
+  
+    toggleSwitch.addEventListener('change', () => {
+      if (toggleSwitch.checked) {
+        readTweetButton.style.visibility = 'hidden';
+      } else {
+        readTweetButton.style.visibility = 'visible';
+      }
+    });
+  });
+  
+
