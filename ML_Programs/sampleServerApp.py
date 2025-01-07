@@ -10,7 +10,6 @@ app = Flask(__name__)
 CORS(app)
 
 try:
-
     tokenizer = AutoTokenizer.from_pretrained("eliasalbouzidi/distilbert-nsfw-text-classifier")
     model = AutoModelForSequenceClassification.from_pretrained("eliasalbouzidi/distilbert-nsfw-text-classifier")
     textClassifier = TextClassificationPipeline(model=model, tokenizer=tokenizer)
@@ -22,10 +21,9 @@ except Exception as e:
 @app.route('/analyze', methods=['POST'])
 def analyze_text():
     """
-    Endpoint to classify multiple texts and return results, including flagged NSFW words.
+    Endpoint to classify multiple texts and return results.
     """
     try:
-
         data = request.json
         tweets = data.get('tweets', [])
 
@@ -42,35 +40,20 @@ def analyze_text():
             label = result[0]['label']
             score = result[0]['score']
 
-            #contact me for this
-            common_words = set(['that', 'right', 'favorite', 'reveals', 'artist', 'is', 'now'])
-
-            flagged_words = []
-            censored_text = text
-
-            if label == "nsfw":
-
-                for word in text.split():
-                    if len(word) > 3 and word.lower() not in common_words:
-                        flagged_words.append(word)
-                        censored_text = censored_text.replace(word, "****")
-
             threshold = 0.994
             if label == "nsfw" and score < threshold:
                 label = "uncertain"
 
             results.append({
-                "text": censored_text,  # Sendin the censored text
+                "text": text,  # Sending the original text
                 "label": label,
-                "score": score,
-                "flagged_words": flagged_words
+                "score": score
             })
 
         return jsonify(results), 200
     except Exception as e:
         print(f"Error processing request: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

@@ -129,7 +129,6 @@
       console.log("Extracted Tweets:", tweetData);
 
       // Send the extracted tweet data to the server
-      sendTweetsToServer(originalTweets);
     }, 1000); // Adjust the timeout as needed
   }
 
@@ -156,26 +155,7 @@
     }
   }
 
-  // Function to send tweets to the server (if needed for full tweet analysis)
-  function sendTweetsToServer(tweets) {
-    tweets.forEach((tweet) => {
-      fetch("http://127.0.0.1:5000/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tweets: [{ text: tweet.originalText }] }),
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          console.log("Server Response for:", tweet.originalText, data);
-          // You can handle NSFW classification at the tweet level here
-        })
-        .catch((error) => {
-          console.error("Error sending tweet to the server:", error);
-        });
-    });
-  }
+
 
   // Call the function to extract and censor tweets
   extractTweets();
