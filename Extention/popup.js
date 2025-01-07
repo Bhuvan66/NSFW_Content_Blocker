@@ -90,7 +90,14 @@ document.addEventListener("DOMContentLoaded", () => {
       userInitiatedChange = true;
       readTweetButton.style.visibility = toggleSwitch.checked ? "hidden" : "visible";
       // Save the state to the background script
-      chrome.runtime.sendMessage({ action: "setToggleSwitchState", state: toggleSwitch.checked });
+      chrome.runtime.sendMessage({ action: "setToggleSwitchState", state: toggleSwitch.checked }, () => {
+        // Reload the active tab
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs && tabs.length > 0) {
+            chrome.tabs.reload(tabs[0].id);
+          }
+        });
+      });
     });
 
     const observer = new MutationObserver(() => {
