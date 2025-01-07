@@ -1,6 +1,15 @@
 (function () {
+  const uncensoredTweets = new Map();
+  let lastCallTime = 0;
+  const cooldownTime = 5000; // 5 seconds cooldown
 
   async function extractTweets() {
+    const currentTime = Date.now();
+    if (currentTime - lastCallTime < cooldownTime) {
+      console.log("Cooldown active. Please wait before calling extractTweets again.");
+      return;
+    }
+    lastCallTime = currentTime;
 
     let originalTweets = [];
     swearWordList = [
@@ -84,7 +93,12 @@
             }
           }
 
-          tweetTextElement.innerText = censoredText;
+          // Check if the tweet was previously uncensored
+          if (uncensoredTweets.has(tweetText)) {
+            tweetTextElement.innerText = tweetText;
+          } else {
+            tweetTextElement.innerText = censoredText;
+          }
 
           if (hasCensoredWords && !tweetTextElement.parentElement.querySelector(".uncensor-button")) {
             const uncensorButton = document.createElement("button");
@@ -101,8 +115,10 @@
             uncensorButton.addEventListener("click", () => {
               if (tweetTextElement.innerText === censoredText) {
                 tweetTextElement.innerText = tweetText; // Reveal original text
+                uncensoredTweets.set(tweetText, true); // Mark tweet as uncensored
               } else {
                 tweetTextElement.innerText = censoredText; // Revert to censored text
+                uncensoredTweets.delete(tweetText); // Mark tweet as censored
               }
             });
 
@@ -171,4 +187,20 @@
   });
 
   observer.observe(document.body, { childList: true, subtree: true });
+
+  // Check the initial state of the toggle switch
+  chrome.storage.sync.get(['toggleSwitchState'], (result) => {
+    if (result.toggleSwitchState) {
+      extractTweets();
+    }
+  });
+
+  // Call extractTweets once when the page loads if the checkbox is checked
+  window.addEventListener('load', () => {
+    chrome.storage.sync.get(['toggleSwitchState'], (result) => {
+      if (result.toggleSwitchState) {
+        extractTweets();
+      }
+    });
+  });
 })();

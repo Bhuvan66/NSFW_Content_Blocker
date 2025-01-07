@@ -31,3 +31,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.sync.set({ toggleSwitchState: message.state });
   }
 });
+
+// Listen for tab updates to check if the page is reloaded
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url.includes("x.com")) {
+    chrome.storage.sync.get(['toggleSwitchState'], (result) => {
+      if (result.toggleSwitchState) {
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ["content.js"],
+        });
+      }
+    });
+  }
+});
