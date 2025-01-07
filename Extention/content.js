@@ -67,45 +67,48 @@
         originalTweets.push({ element: tweetTextElement, originalText: tweetText });
 
         const isTweetNSFW = await checkNSFW(tweetText);
-        let words = tweetText.split(/\s+/);
-        let censoredText = "";
-        let hasCensoredWords = false;
+        let censoredText = tweetText; // Initialize censoredText with original text
+        if (isTweetNSFW) {
+          let words = tweetText.split(/\s+/);
+          censoredText = "";
+          let hasCensoredWords = false;
 
-        for (let i = 0; i < words.length; i++) {
-          const word = words[i];
-          const isNSFWWord = swearWordList.includes(word.toLowerCase());
-          if (isTweetNSFW && isNSFWWord) {
-            hasCensoredWords = true;
-            censoredText += (i > 0 ? " " : "") + "*".repeat(word.length);
-          } else {
-            censoredText += (i > 0 ? " " : "") + word;
-          }
-        }
-
-        tweetTextElement.innerText = censoredText;
-
-        if (hasCensoredWords && !tweetTextElement.parentElement.querySelector(".uncensor-button")) {
-          const uncensorButton = document.createElement("button");
-          uncensorButton.innerText = "🚫";
-          uncensorButton.classList.add("uncensor-button");
-          uncensorButton.style.marginLeft = "5px";
-          uncensorButton.style.fontSize = "12px";
-          uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
-          uncensorButton.style.border = "none";
-          uncensorButton.style.cursor = "pointer";
-          uncensorButton.style.width = "20px"; // Set width to fit one character
-          uncensorButton.style.height = "20px"; // Set height to fit one character
-
-          uncensorButton.addEventListener("click", () => {
-            if (tweetTextElement.innerText === censoredText) {
-              tweetTextElement.innerText = tweetText; // Reveal original text
+          for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            const isNSFWWord = swearWordList.includes(word.toLowerCase());
+            if (isNSFWWord) {
+              hasCensoredWords = true;
+              censoredText += (i > 0 ? " " : "") + "*".repeat(word.length);
             } else {
-              tweetTextElement.innerText = censoredText; // Revert to censored text
+              censoredText += (i > 0 ? " " : "") + word;
             }
-          });
+          }
 
-          // Append the uncensor button next to the tweet text element
-          tweetTextElement.parentElement.appendChild(uncensorButton);
+          tweetTextElement.innerText = censoredText;
+
+          if (hasCensoredWords && !tweetTextElement.parentElement.querySelector(".uncensor-button")) {
+            const uncensorButton = document.createElement("button");
+            uncensorButton.innerText = "🚫";
+            uncensorButton.classList.add("uncensor-button");
+            uncensorButton.style.marginLeft = "5px";
+            uncensorButton.style.fontSize = "12px";
+            uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+            uncensorButton.style.border = "none";
+            uncensorButton.style.cursor = "pointer";
+            uncensorButton.style.width = "20px"; // Set width to fit one character
+            uncensorButton.style.height = "20px"; // Set height to fit one character
+
+            uncensorButton.addEventListener("click", () => {
+              if (tweetTextElement.innerText === censoredText) {
+                tweetTextElement.innerText = tweetText; // Reveal original text
+              } else {
+                tweetTextElement.innerText = censoredText; // Revert to censored text
+              }
+            });
+
+            // Append the uncensor button next to the tweet text element
+            tweetTextElement.parentElement.appendChild(uncensorButton);
+          }
         }
 
         // Return tweet content, username, and timestamp as an object
@@ -116,7 +119,7 @@
         const timestamp = timestampElement ? timestampElement.getAttribute("datetime") : "Unknown time";
 
         return {
-          content: censoredText,
+          content: isTweetNSFW ? censoredText : tweetText,
           username: username,
           timestamp: timestamp,
         };
