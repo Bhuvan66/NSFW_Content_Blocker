@@ -158,8 +158,17 @@
     }
   }
 
-
-
-  // Call the function to extract and censor tweets
+  // Call the function to extract and censor tweets initially
   extractTweets();
+
+  // Add a mutation observer to detect new content
+  const observer = new MutationObserver((mutations) => {
+    chrome.storage.sync.get(['toggleSwitchState'], (result) => {
+      if (result.toggleSwitchState) {
+        extractTweets();
+      }
+    });
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 })();

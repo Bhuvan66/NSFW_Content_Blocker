@@ -75,74 +75,39 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 document.addEventListener("DOMContentLoaded", () => {
   const toggleSwitch = document.querySelector(".toggle-switch input");
   const readTweetButton = document.getElementById("read-tweets");
+  let userInitiatedChange = false;
+
+  // Load the saved state from the background script
+  chrome.runtime.sendMessage({ action: "getToggleSwitchState" }, (response) => {
+    if (response.toggleSwitchState !== undefined) {
+      toggleSwitch.checked = response.toggleSwitchState;
+      readTweetButton.style.visibility = toggleSwitch.checked ? "hidden" : "visible";
+    }
+  });
 
   if (toggleSwitch) {
     toggleSwitch.addEventListener("change", () => {
+      userInitiatedChange = true;
       readTweetButton.style.visibility = toggleSwitch.checked ? "hidden" : "visible";
+      // Save the state to the background script
+      chrome.runtime.sendMessage({ action: "setToggleSwitchState", state: toggleSwitch.checked });
     });
+
+    const observer = new MutationObserver(() => {
+      if (!userInitiatedChange) {
+        toggleSwitch.checked = !toggleSwitch.checked;
+      }
+      userInitiatedChange = false;
+    });
+
+    observer.observe(toggleSwitch, { attributes: true, attributeFilter: ['checked'] });
   }
 });
 
-// // Trigger tweet extraction
-// document.getElementById("read-tweets").addEventListener("click", () => {
-//   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//     if (tabs && tabs.length > 0) {
-//       chrome.scripting.executeScript({
-//         target: { tabId: tabs[0].id },
-//         files: ["content.js"],
-//       });
-//     }
-//   });
-
-//   // Optional: Show a confirmation message
-//   document.getElementById("output").innerText = "Tweets extracted! Check the console.";
-// });
-
-// // using fuc fr reusability
-// function showNotXMessage() {
-//   document.body.innerHTML = "";
-//   document.body.innerText = "ooopss!! This is not X.com";
-//   document.body.style.cssText = `
-//     display: flex;
-//     justify-content: center;
-//     align-items: center;
-//     height: 100vh;
-//     width:100vh;
-//     font-size: 24px;
-//     color:#be185d;
-//     //  #7e22ce;
-//     background-color: #09090b;
-//     font-family: Arial, sans-serif;
-//   `;
-// }
-
-// // Prevent popup if the site is not x.com
-// chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-//   if (tabs && tabs.length > 0 && tabs[0].url.startsWith("chrome://")) {
-//     showNotXMessage();
-//     return;
-//   }
-
-//   chrome.scripting.executeScript(
-//     {
-//       target: { tabId: tabs[0].id },
-//       func: () => window.location.hostname,
-//     },
-//     (results) => {
-//       if (chrome.runtime.lastError || !results || results.length === 0 || results[0].result.toLowerCase() !== "x.com") {
-//         showNotXMessage();
-//       }
-//     }
-//   );
-// });
-
-// document.addEventListener("DOMContentLoaded", () => {
-//   const toggleSwitch = document.querySelector(".toggle-switch input");
-//   const readTweetButton = document.getElementById("read-tweets");
-
-//   if (toggleSwitch) {
-//     toggleSwitch.addEventListener("change", () => {
-//       readTweetButton.style.visibility = toggleSwitch.checked ? "hidden" : "visible";
-//     });
-//   }
-// });
+// Save the state when the popup is closed
+window.addEventListener("beforeunload", () => {
+  const toggleSwitch = document.querySelector(".toggle-switch input");
+  if (toggleSwitch) {
+    chrome.storage.sync.set({ toggleSwitchState: toggleSwitch.checked });
+  }
+});

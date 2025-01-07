@@ -1,20 +1,19 @@
 {
-    "manifest_version": 3,
-    "name": "Twitter Reader",
-    "version": "1.0",
-    "description": "An extension to read and manipulate tweets from Twitter.",
-    "permissions": ["activeTab", "scripting"],
-    "host_permissions": ["https://x.com/*"],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "action": {
-      "default_popup": "popup.html",
-      "default_icon": {
-        "16": "icon.png",
-        "48": "icon.png",
-        "128": "icon.png"
-      }
+  "manifest_version": 3,
+  "name": "Twitter Reader",
+  "version": "1.0",
+  "description": "An extension to read and manipulate tweets from Twitter.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["https://x.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
     }
   }
-  
+}

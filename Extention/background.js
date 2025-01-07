@@ -16,4 +16,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => console.error("Error:", error));
     }
   });
-  
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.sync.set({ toggleSwitchState: false });
+});
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === "getToggleSwitchState") {
+    chrome.storage.sync.get(['toggleSwitchState'], (result) => {
+      sendResponse({ toggleSwitchState: result.toggleSwitchState });
+    });
+    return true; // Keep the message channel open for sendResponse
+  } else if (message.action === "setToggleSwitchState") {
+    chrome.storage.sync.set({ toggleSwitchState: message.state });
+  }
+});
