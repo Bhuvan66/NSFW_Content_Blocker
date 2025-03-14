@@ -15,5 +15,11 @@
       "48": "icon.png",
       "128": "icon.png"
     }
+  },
+"web_accessible_resources": [
+  {
+    "resources": ["swearWord.json"],
+    "matches": ["<all_urls>"]
   }
+]
 }
