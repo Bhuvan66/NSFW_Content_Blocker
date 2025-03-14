@@ -17,7 +17,9 @@ config = ViTConfig.from_pretrained("google/vit-base-patch16-224-in21k", num_labe
 model = ViTForImageClassification(config)
 
 #loadin trained model
-model_path = "/content/drive/MyDrive/trainedModelTrial1.pth"
+# model_path = "/content/drive/MyDrive/trainedModelTrial1.pth"
+model_path = "C:\\Users\\ASUS\\Desktop\\sideQuest\\ML_Programs\\imgModelBlocker\\trainedModelTrial1.pth"
+
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.to(device)
 model.eval()
@@ -30,7 +32,8 @@ transform = transforms.Compose([
 ])
 
 #loading the img wch r meant to see whether the predictions r crect or not
-unseenPath = "/content/drive/MyDrive/unseen1"
+# unseenPath = "/content/drive/MyDrive/unseen1"
+unseenPath = "C:\\Users\\ASUS\\Desktop\\sideQuest\\ML_Programs\\imgModelBlocker\\unseen1"
 imagePaths = glob.glob(unseenPath + "/*.jpg")
 
 #makin grid
