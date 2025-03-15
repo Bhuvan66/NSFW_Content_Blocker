@@ -1,15 +1,186 @@
+// (function () {
+//   const uncensoredTweets = new Map();
+//   let lastCallTime = 0;
+//   const cooldownTime = 5000; // 5 seconds cooldown
+//   let swearWordSet = new Set(); // Use a Set for swear words
+
+//   // Function to load swear words from JSON
+//   async function loadSwearWords() {
+//     try {
+//       const url = chrome.runtime.getURL("swearWord.json"); // Fetch using correct URL
+//       const response = await fetch(url);
+//       if (!response.ok)
+//         throw new Error(`HTTP error! Status: ${response.status}`);
+
+//       const swearWords = await response.json();
+//       swearWordSet = new Set(swearWords);
+//       console.log("Swear words loaded successfully:", swearWordSet);
+//     } catch (error) {
+//       console.error("Error loading swear words:", error);
+//     }
+//   }
+
+//   // Call the function to load swear words
+//   loadSwearWords();
+
+//   async function extractTweets() {
+//     const currentTime = Date.now();
+//     if (currentTime - lastCallTime < cooldownTime) {
+//       console.log(
+//         "Cooldown active. Please wait before calling extractTweets again."
+//       );
+//       return;
+//     }
+//     lastCallTime = currentTime;
+
+//     let originalTweets = [];
+
+//     setTimeout(async () => {
+//       const tweetContainers = document.querySelectorAll("article");
+
+//       if (tweetContainers.length === 0) {
+//         console.log("No tweets found.");
+//         return;
+//       }
+
+//       const tweetDataPromises = Array.from(tweetContainers).map(
+//         async (tweet) => {
+//           const tweetTextElement = tweet.querySelector(
+//             'div[data-testid="tweetText"]'
+//           );
+//           let tweetText = tweetTextElement
+//             ? tweetTextElement.innerText.trim()
+//             : null;
+
+//           if (!tweetText) {
+//             return null;
+//           }
+
+//           originalTweets.push({
+//             element: tweetTextElement,
+//             originalText: tweetText,
+//           });
+//           const isTweetNSFW = await checkNSFW(tweetText);
+//           let censoredText = tweetText;
+
+//           if (isTweetNSFW) {
+//             let words = tweetText.split(/\s+/);
+//             censoredText = "";
+//             let hasCensoredWords = false;
+
+//             for (let i = 0; i < words.length; i++) {
+//               const word = words[i];
+//               const isNSFWWord = swearWordSet.has(word.toLowerCase());
+//               if (isNSFWWord) {
+//                 hasCensoredWords = true;
+//                 censoredText += (i > 0 ? " " : "") + "*".repeat(word.length);
+//               } else {
+//                 censoredText += (i > 0 ? " " : "") + word;
+//               }
+//             }
+
+//             if (uncensoredTweets.has(tweetText)) {
+//               tweetTextElement.innerText = tweetText;
+//             } else {
+//               tweetTextElement.innerText = censoredText;
+//             }
+
+//             if (
+//               hasCensoredWords &&
+//               !tweetTextElement.parentElement.querySelector(".uncensor-button")
+//             ) {
+//               const uncensorButton = document.createElement("button");
+//               uncensorButton.innerText = "🚫";
+//               uncensorButton.classList.add("uncensor-button");
+//               uncensorButton.style.marginLeft = "5px";
+//               uncensorButton.style.fontSize = "12px";
+//               uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+//               uncensorButton.style.border = "none";
+//               uncensorButton.style.cursor = "pointer";
+//               uncensorButton.style.width = "20px";
+//               uncensorButton.style.height = "20px";
+
+//               uncensorButton.addEventListener("click", () => {
+//                 if (tweetTextElement.innerText === censoredText) {
+//                   tweetTextElement.innerText = tweetText;
+//                   uncensoredTweets.set(tweetText, true);
+//                 } else {
+//                   tweetTextElement.innerText = censoredText;
+//                   uncensoredTweets.delete(tweetText);
+//                 }
+//               });
+//               tweetTextElement.parentElement.appendChild(uncensorButton);
+//             }
+//           }
+//           return {
+//             content: censoredText,
+//             username: "Unknown",
+//             timestamp: "Unknown",
+//           };
+//         }
+//       );
+
+//       const tweetData = (await Promise.all(tweetDataPromises)).filter(
+//         (tweet) => tweet !== null
+//       );
+//       console.log("Extracted Tweets:", tweetData);
+//     }, 1000);
+//   }
+
+//   async function checkNSFW(text) {
+//     try {
+//       const response = await fetch("http://127.0.0.1:5000/analyze", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ tweets: [{ text: text }] }),
+//       });
+//       const data = await response.json();
+//       return data && data[0].label === "nsfw";
+//     } catch (error) {
+//       console.error("Error sending text to the server:", error);
+//       return false;
+//     }
+//   }
+
+//   extractTweets();
+
+//   const observer = new MutationObserver(() => {
+//     chrome.storage.sync.get(["toggleSwitchState"], (result) => {
+//       if (result.toggleSwitchState) {
+//         extractTweets();
+//       }
+//     });
+//   });
+
+//   observer.observe(document.body, { childList: true, subtree: true });
+
+//   chrome.storage.sync.get(["toggleSwitchState"], (result) => {
+//     if (result.toggleSwitchState) {
+//       extractTweets();
+//     }
+//   });
+
+//   window.addEventListener("load", () => {
+//     chrome.storage.sync.get(["toggleSwitchState"], (result) => {
+//       if (result.toggleSwitchState) {
+//         extractTweets();
+//       }
+//     });
+//   });
+// })();
+
 (function () {
   const uncensoredTweets = new Map();
   const uncensoredImages = new Map();
   let lastCallTimeTweets = 0;
   let lastCallTimeImages = 0;
   const cooldownTime = 5000; // 5 seconds cooldown
-  let swearWordSet = new Set(); // Use a Set for swear words
+  let swearWordSet = new Set(); // Store swear words for filtering
 
   // Function to load swear words from JSON
   async function loadSwearWords() {
     try {
-      const url = chrome.runtime.getURL("swearWord.json"); // Fetch using correct URL
+      const url = chrome.runtime.getURL("swearWord.json");
       const response = await fetch(url);
       if (!response.ok)
         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -20,6 +191,11 @@
     } catch (error) {
       console.error("Error loading swear words:", error);
     }
+  }
+
+  // Check if text contains NSFW content
+  function checkNSFW(text) {
+    return [...swearWordSet].some((word) => text.toLowerCase().includes(word));
   }
 
   async function extractTweets() {
@@ -35,14 +211,12 @@
     let originalTweets = [];
 
     setTimeout(async () => {
-      // Select all <article> tags (tweets are typically wrapped in them)
       const tweetContainers = document.querySelectorAll("article");
-
       if (tweetContainers.length === 0) {
         console.log("No tweets found.");
         return;
       }
-      // Process all tweets asynchronously and wait for the results
+
       const tweetDataPromises = Array.from(tweetContainers).map(
         async (tweet) => {
           const tweetTextElement = tweet.querySelector(
@@ -51,47 +225,38 @@
           let tweetText = tweetTextElement
             ? tweetTextElement.innerText.trim()
             : null;
+          if (!tweetText) return null;
 
-          // Skip this tweet if no content is found
-          if (!tweetText) {
-            return null;
-          }
-          // Storing tweet text for uncensoring later
           originalTweets.push({
             element: tweetTextElement,
             originalText: tweetText,
           });
-          const isTweetNSFW = await checkNSFW(tweetText);
-          let censoredText = tweetText; // Initialize censoredText with original text
+
+          const isTweetNSFW = checkNSFW(tweetText);
+          let censoredText = tweetText;
 
           if (isTweetNSFW) {
             censoredText = censorText(tweetText);
-            // Check if the tweet was previously uncensored
-            if (uncensoredTweets.has(tweetText)) {
-              tweetTextElement.innerText = tweetText;
-            } else {
-              tweetTextElement.innerText = censoredText;
-            }
+            tweetTextElement.innerText = uncensoredTweets.has(tweetText)
+              ? tweetText
+              : censoredText;
 
             if (
               !tweetTextElement.parentElement.querySelector(".uncensor-button")
             ) {
               const uncensorButton = createButton();
-
               uncensorButton.addEventListener("click", () => {
                 if (tweetTextElement.innerText === censoredText) {
-                  tweetTextElement.innerText = tweetText; // Reveal original text
-                  uncensoredTweets.set(tweetText, true); // Mark tweet as uncensored
+                  tweetTextElement.innerText = tweetText;
+                  uncensoredTweets.set(tweetText, true);
                 } else {
-                  tweetTextElement.innerText = censoredText; // Revert to censored text
-                  uncensoredTweets.delete(tweetText); // Mark tweet as censored
+                  tweetTextElement.innerText = censoredText;
+                  uncensoredTweets.delete(tweetText);
                 }
               });
-              // Append the uncensor button next to the tweet text element
               tweetTextElement.parentElement.appendChild(uncensorButton);
             }
           }
-          // Return tweet content, username, and timestamp as an object
           return {
             content: censoredText,
             username: "Unknown",
@@ -99,7 +264,7 @@
           };
         }
       );
-      // Wait for all tweets to be processed and filter out null results
+
       const tweetData = (await Promise.all(tweetDataPromises)).filter(
         (tweet) => tweet !== null
       );
@@ -120,65 +285,71 @@
     let originalImages = [];
 
     setTimeout(async () => {
-      // Select all <img> tags
       const imageContainers = document.querySelectorAll("img");
-
       if (imageContainers.length === 0) {
         console.log("No images found.");
         return;
       }
-      // Process all images asynchronously and wait for the results
+
       const imageDataPromises = Array.from(imageContainers).map(
         async (image) => {
           const imageUrl = image.src;
+          if (!imageUrl) return null;
 
-          // Skip this image if no URL is found
-          if (!imageUrl) {
+          originalImages.push({ element: image, originalUrl: imageUrl });
+          console.log("Processing image:", imageUrl);
+
+          try {
+            // ✅ Send correct JSON format
+            const response = await fetch("http://127.0.0.1:5000/predict", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ url: imageUrl }),
+            });
+
+            if (!response.ok)
+              throw new Error(`Server error: ${response.status}`);
+            const data = await response.json();
+            const isImageNSFW = data.prediction === -1;
+
+            if (isImageNSFW) {
+              console.log("NSFW detected:", imageUrl);
+
+              // ✅ Apply blur
+              image.style.filter = "blur(10px)";
+              console.log("Applying blur to:", imageUrl);
+
+              if (!image.parentElement.querySelector(".uncensor-button")) {
+                const uncensorButton = createButton();
+                uncensorButton.addEventListener("click", () => {
+                  if (image.style.filter === "blur(10px)") {
+                    image.style.filter = "none";
+                    uncensoredImages.set(imageUrl, true);
+                  } else {
+                    image.style.filter = "blur(10px)";
+                    uncensoredImages.delete(imageUrl);
+                  }
+                });
+
+                // ✅ Ensure parent exists before appending
+                if (image.parentElement) {
+                  image.parentElement.appendChild(uncensorButton);
+                } else {
+                  console.warn("No parent found for image:", imageUrl);
+                }
+              }
+            } else {
+              console.log("Image is SFW:", imageUrl);
+            }
+
+            return { url: imageUrl, status: isImageNSFW ? "NSFW" : "SFW" };
+          } catch (error) {
+            console.error("Error processing image:", imageUrl, error);
             return null;
           }
-          // Storing image URL for uncensoring later
-          originalImages.push({
-            element: image,
-            originalUrl: imageUrl,
-          });
-          console.log("Processing image:", imageUrl);
-          const isImageNSFW = await checkNSFWImage(imageUrl);
-
-          if (isImageNSFW) {
-            console.log("Image is NSFW:", imageUrl);
-            // Apply blur filter to the image
-            image.style.filter = "blur(10px)";
-            // Check if the image was previously uncensored
-            if (uncensoredImages.has(imageUrl)) {
-              image.style.filter = "none";
-            }
-
-            if (!image.parentElement.querySelector(".uncensor-button")) {
-              const uncensorButton = createButton();
-
-              uncensorButton.addEventListener("click", () => {
-                if (image.style.filter === "blur(10px)") {
-                  image.style.filter = "none"; // Reveal original image
-                  uncensoredImages.set(imageUrl, true); // Mark image as uncensored
-                } else {
-                  image.style.filter = "blur(10px)"; // Revert to blurred image
-                  uncensoredImages.delete(imageUrl); // Mark image as censored
-                }
-              });
-              // Append the uncensor button next to the image element
-              image.parentElement.appendChild(uncensorButton);
-            }
-          } else {
-            console.log("Image is SFW:", imageUrl);
-          }
-          // Return image URL and status as an object
-          return {
-            url: imageUrl,
-            status: isImageNSFW ? "NSFW" : "SFW",
-          };
         }
       );
-      // Wait for all images to be processed and filter out null results
+
       const imageData = (await Promise.all(imageDataPromises)).filter(
         (image) => image !== null
       );
@@ -186,106 +357,52 @@
     }, 1000);
   }
 
-  function censorText(text) {
-    let words = text.split(/\s+/);
-    let censoredText = "";
-    let hasCensoredWords = false;
-
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i];
-      const isNSFWWord = swearWordSet.has(word.toLowerCase()); // Check against the Set
-      if (isNSFWWord) {
-        hasCensoredWords = true;
-        censoredText += (i > 0 ? " " : "") + "*".repeat(word.length);
-      } else {
-        censoredText += (i > 0 ? " " : "") + word;
-      }
-    }
-    return censoredText;
-  }
-
-  function createButton() {
-    const uncensorButton = document.createElement("button");
-    uncensorButton.innerText = "🚫";
-    uncensorButton.classList.add("uncensor-button");
-    uncensorButton.style.marginLeft = "5px";
-    uncensorButton.style.fontSize = "12px";
-    uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
-    uncensorButton.style.border = "none";
-    uncensorButton.style.cursor = "pointer";
-    uncensorButton.style.width = "20px";
-    uncensorButton.style.height = "20px";
-    return uncensorButton;
-  }
-
-  // Function to send words to the server for NSFW classification
-  async function checkNSFW(text) {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tweets: [{ text: text }] }),
-      });
-      const data = await response.json();
-      return data && data[0].label === "nsfw";
-    } catch (error) {
-      console.error("Error sending text to the server:", error);
-      return false; // In case of error, assume tweet is safe
-    }
-  }
-
-  // Function to send image URL to the server for NSFW classification
   async function checkNSFWImage(imageUrl) {
     try {
       const response = await fetch("http://127.0.0.1:5000/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: imageUrl }),
+        body: JSON.stringify({ url: imageUrl }),
       });
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
-      return data && data.prediction === -1;
+      return data.prediction === -1;
     } catch (error) {
       console.error("Error sending image to the server:", error);
-      return false; // In case of error, assume image is safe
+      return false; // Assume SFW if API is unavailable
     }
   }
 
-  // Initialize the extension
+  function censorText(text) {
+    return text
+      .split(" ")
+      .map((word) =>
+        swearWordSet.has(word.toLowerCase()) ? "*".repeat(word.length) : word
+      )
+      .join(" ");
+  }
+
+  function createButton() {
+    const button = document.createElement("button");
+    button.innerText = "Uncensor";
+    button.className = "uncensor-button";
+    button.style.cssText = `
+      background-color: red; 
+      color: white; 
+      border: none; 
+      padding: 5px 10px; 
+      font-size: 12px; 
+      cursor: pointer;
+      margin-left: 10px;
+    `;
+    return button;
+  }
+
   async function init() {
     await loadSwearWords();
     extractTweets();
     extractImages();
-    
-    const observer = new MutationObserver(() => {
-      chrome.storage.sync.get(["toggleSwitchState"], (result) => {
-        if (result.toggleSwitchState) {
-          extractTweets();
-          extractImages();
-        }
-      });
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    // Check the initial state of the toggle switch
-    chrome.storage.sync.get(["toggleSwitchState"], (result) => {
-      if (result.toggleSwitchState) {
-        extractTweets();
-        extractImages();
-      }
-    });
-
-    // Call extractTweets and extractImages once when the page loads if the checkbox is checked
-    window.addEventListener("load", () => {
-      chrome.storage.sync.get(["toggleSwitchState"], (result) => {
-        if (result.toggleSwitchState) {
-          extractTweets();
-          extractImages();
-        }
-      });
-    });
   }
 
-  // Call the init function to start the extension
   init();
 })();
