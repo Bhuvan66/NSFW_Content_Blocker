@@ -1,6 +1,8 @@
 (function () {
   const uncensoredTweets = new Map();
-  let lastCallTime = 0;
+  const uncensoredImages = new Map();
+  let lastCallTimeTweets = 0;
+  let lastCallTimeImages = 0;
   const cooldownTime = 5000; // 5 seconds cooldown
   let swearWordSet = new Set(); // Use a Set for swear words
 
@@ -22,13 +24,13 @@
 
   async function extractTweets() {
     const currentTime = Date.now();
-    if (currentTime - lastCallTime < cooldownTime) {
+    if (currentTime - lastCallTimeTweets < cooldownTime) {
       console.log(
         "Cooldown active. Please wait before calling extractTweets again."
       );
       return;
     }
-    lastCallTime = currentTime;
+    lastCallTimeTweets = currentTime;
 
     let originalTweets = [];
 
@@ -105,6 +107,85 @@
     }, 1000);
   }
 
+  async function extractImages() {
+    const currentTime = Date.now();
+    if (currentTime - lastCallTimeImages < cooldownTime) {
+      console.log(
+        "Cooldown active. Please wait before calling extractImages again."
+      );
+      return;
+    }
+    lastCallTimeImages = currentTime;
+
+    let originalImages = [];
+
+    setTimeout(async () => {
+      // Select all <img> tags
+      const imageContainers = document.querySelectorAll("img");
+
+      if (imageContainers.length === 0) {
+        console.log("No images found.");
+        return;
+      }
+      // Process all images asynchronously and wait for the results
+      const imageDataPromises = Array.from(imageContainers).map(
+        async (image) => {
+          const imageUrl = image.src;
+
+          // Skip this image if no URL is found
+          if (!imageUrl) {
+            return null;
+          }
+          // Storing image URL for uncensoring later
+          originalImages.push({
+            element: image,
+            originalUrl: imageUrl,
+          });
+          console.log("Processing image:", imageUrl);
+          const isImageNSFW = await checkNSFWImage(imageUrl);
+
+          if (isImageNSFW) {
+            console.log("Image is NSFW:", imageUrl);
+            // Apply blur filter to the image
+            image.style.filter = "blur(10px)";
+            // Check if the image was previously uncensored
+            if (uncensoredImages.has(imageUrl)) {
+              image.style.filter = "none";
+            }
+
+            if (!image.parentElement.querySelector(".uncensor-button")) {
+              const uncensorButton = createButton();
+
+              uncensorButton.addEventListener("click", () => {
+                if (image.style.filter === "blur(10px)") {
+                  image.style.filter = "none"; // Reveal original image
+                  uncensoredImages.set(imageUrl, true); // Mark image as uncensored
+                } else {
+                  image.style.filter = "blur(10px)"; // Revert to blurred image
+                  uncensoredImages.delete(imageUrl); // Mark image as censored
+                }
+              });
+              // Append the uncensor button next to the image element
+              image.parentElement.appendChild(uncensorButton);
+            }
+          } else {
+            console.log("Image is SFW:", imageUrl);
+          }
+          // Return image URL and status as an object
+          return {
+            url: imageUrl,
+            status: isImageNSFW ? "NSFW" : "SFW",
+          };
+        }
+      );
+      // Wait for all images to be processed and filter out null results
+      const imageData = (await Promise.all(imageDataPromises)).filter(
+        (image) => image !== null
+      );
+      console.log("Extracted Images:", imageData);
+    }, 1000);
+  }
+
   function censorText(text) {
     let words = text.split(/\s+/);
     let censoredText = "";
@@ -153,15 +234,33 @@
     }
   }
 
+  // Function to send image URL to the server for NSFW classification
+  async function checkNSFWImage(imageUrl) {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: imageUrl }),
+      });
+      const data = await response.json();
+      return data && data.prediction === -1;
+    } catch (error) {
+      console.error("Error sending image to the server:", error);
+      return false; // In case of error, assume image is safe
+    }
+  }
+
   // Initialize the extension
   async function init() {
     await loadSwearWords();
     extractTweets();
-
+    extractImages();
+    
     const observer = new MutationObserver(() => {
       chrome.storage.sync.get(["toggleSwitchState"], (result) => {
         if (result.toggleSwitchState) {
           extractTweets();
+          extractImages();
         }
       });
     });
@@ -172,14 +271,16 @@
     chrome.storage.sync.get(["toggleSwitchState"], (result) => {
       if (result.toggleSwitchState) {
         extractTweets();
+        extractImages();
       }
     });
 
-    // Call extractTweets once when the page loads if the checkbox is checked
+    // Call extractTweets and extractImages once when the page loads if the checkbox is checked
     window.addEventListener("load", () => {
       chrome.storage.sync.get(["toggleSwitchState"], (result) => {
         if (result.toggleSwitchState) {
           extractTweets();
+          extractImages();
         }
       });
     });
