@@ -20,9 +20,6 @@
     }
   }
 
-  // Call the function to load swear words
-  loadSwearWords();
-
   async function extractTweets() {
     const currentTime = Date.now();
     if (currentTime - lastCallTime < cooldownTime) {
@@ -66,20 +63,7 @@
           let censoredText = tweetText; // Initialize censoredText with original text
 
           if (isTweetNSFW) {
-            let words = tweetText.split(/\s+/);
-            censoredText = "";
-            let hasCensoredWords = false;
-
-            for (let i = 0; i < words.length; i++) {
-              const word = words[i];
-              const isNSFWWord = swearWordSet.has(word.toLowerCase()); // Check against the Set
-              if (isNSFWWord) {
-                hasCensoredWords = true;
-                censoredText += (i > 0 ? " " : "") + "*".repeat(word.length);
-              } else {
-                censoredText += (i > 0 ? " " : "") + word;
-              }
-            }
+            censoredText = censorText(tweetText);
             // Check if the tweet was previously uncensored
             if (uncensoredTweets.has(tweetText)) {
               tweetTextElement.innerText = tweetText;
@@ -88,19 +72,9 @@
             }
 
             if (
-              hasCensoredWords &&
               !tweetTextElement.parentElement.querySelector(".uncensor-button")
             ) {
-              const uncensorButton = document.createElement("button");
-              uncensorButton.innerText = "🚫";
-              uncensorButton.classList.add("uncensor-button");
-              uncensorButton.style.marginLeft = "5px";
-              uncensorButton.style.fontSize = "12px";
-              uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
-              uncensorButton.style.border = "none";
-              uncensorButton.style.cursor = "pointer";
-              uncensorButton.style.width = "20px";
-              uncensorButton.style.height = "20px";
+              const uncensorButton = createButton();
 
               uncensorButton.addEventListener("click", () => {
                 if (tweetTextElement.innerText === censoredText) {
@@ -130,6 +104,39 @@
       console.log("Extracted Tweets:", tweetData);
     }, 1000);
   }
+
+  function censorText(text) {
+    let words = text.split(/\s+/);
+    let censoredText = "";
+    let hasCensoredWords = false;
+
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const isNSFWWord = swearWordSet.has(word.toLowerCase()); // Check against the Set
+      if (isNSFWWord) {
+        hasCensoredWords = true;
+        censoredText += (i > 0 ? " " : "") + "*".repeat(word.length);
+      } else {
+        censoredText += (i > 0 ? " " : "") + word;
+      }
+    }
+    return censoredText;
+  }
+
+  function createButton() {
+    const uncensorButton = document.createElement("button");
+    uncensorButton.innerText = "🚫";
+    uncensorButton.classList.add("uncensor-button");
+    uncensorButton.style.marginLeft = "5px";
+    uncensorButton.style.fontSize = "12px";
+    uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+    uncensorButton.style.border = "none";
+    uncensorButton.style.cursor = "pointer";
+    uncensorButton.style.width = "20px";
+    uncensorButton.style.height = "20px";
+    return uncensorButton;
+  }
+
   // Function to send words to the server for NSFW classification
   async function checkNSFW(text) {
     try {
@@ -145,30 +152,39 @@
       return false; // In case of error, assume tweet is safe
     }
   }
-  // Call the function to extract and censor tweets initially
-  extractTweets();
 
-  const observer = new MutationObserver(() => {
+  // Initialize the extension
+  async function init() {
+    await loadSwearWords();
+    extractTweets();
+
+    const observer = new MutationObserver(() => {
+      chrome.storage.sync.get(["toggleSwitchState"], (result) => {
+        if (result.toggleSwitchState) {
+          extractTweets();
+        }
+      });
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Check the initial state of the toggle switch
     chrome.storage.sync.get(["toggleSwitchState"], (result) => {
       if (result.toggleSwitchState) {
         extractTweets();
       }
     });
-  });
 
-  observer.observe(document.body, { childList: true, subtree: true });
-  // Check the initial state of the toggle switch
-  chrome.storage.sync.get(["toggleSwitchState"], (result) => {
-    if (result.toggleSwitchState) {
-      extractTweets();
-    }
-  });
-  // Call extractTweets once when the page loads if the checkbox is checked
-  window.addEventListener("load", () => {
-    chrome.storage.sync.get(["toggleSwitchState"], (result) => {
-      if (result.toggleSwitchState) {
-        extractTweets();
-      }
+    // Call extractTweets once when the page loads if the checkbox is checked
+    window.addEventListener("load", () => {
+      chrome.storage.sync.get(["toggleSwitchState"], (result) => {
+        if (result.toggleSwitchState) {
+          extractTweets();
+        }
+      });
     });
-  });
+  }
+
+  // Call the init function to start the extension
+  init();
 })();
