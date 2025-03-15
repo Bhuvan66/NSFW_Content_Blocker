@@ -17,7 +17,7 @@ model = ViTForImageClassification(config)
 
 #loadin trained model
 # model_path = "/content/drive/MyDrive/trainedModelTrial1.pth"
-model_path = "C:\\Users\\ASUS\\Desktop\\sideQuest\\ML_Programs\\imgModelBlocker\\trainedModelTrial1.pth"
+model_path = "ML_Programs\\imgModelBlocker\\trainedModelTrial1.pth"
 
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.to(device)
