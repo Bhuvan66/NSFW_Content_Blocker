@@ -21,40 +21,59 @@ except Exception as e:
 
 @app.route('/analyze', methods=['POST'])
 def analyze_text():
-    """
-    Endpoint to classify multiple texts and return results.
-    """
     try:
         data = request.json
-        tweets = data.get('tweets', [])
+        print("Received data:", data)  # Debugging
 
-        if not tweets:
-            return jsonify({"error": "No tweets provided."}), 400
+        if not data or 'tweets' not in data:
+            return jsonify({"error": "Invalid request format."}), 400
+
+        tweets = data['tweets']
+        if not isinstance(tweets, list):
+            return jsonify({"error": "Expected a list of tweets."}), 400
 
         results = []
         for tweet_data in tweets:
-            text = tweet_data.get('text', '')
-            if not text:
+            if not isinstance(tweet_data, dict) or 'text' not in tweet_data:
                 continue
 
-            result = textClassifier(text)
-            label = result[0]['label']
-            score = result[0]['score']
+            text = tweet_data['text'].strip()
+            if not text:
+                continue  # Skip empty tweets
 
-            threshold = 0.994
-            if label == "nsfw" and score < threshold:
-                label = "uncertain"
+            try:
+                result = textClassifier(text)
+                if not result or len(result) == 0:
+                    print("Warning: Empty classification result for:", text)
+                    continue
 
-            results.append({
-                "text": text,  # Sending the original text
-                "label": label,
-                "score": score
-            })
+                label = result[0].get('label', 'unknown')
+                score = result[0].get('score', 0)
+
+                threshold = 0.994
+                if label == "nsfw" and score < threshold:
+                    label = "uncertain"
+
+                results.append({
+                    "text": text,
+                    "label": label,
+                    "score": score
+                })
+
+            except Exception as model_error:
+                print(f"Model error for text: {text} - {model_error}")
+                results.append({
+                    "text": text,
+                    "label": "error",
+                    "score": 0
+                })
 
         return jsonify(results), 200
+
     except Exception as e:
-        print(f"Error processing request: {str(e)}")
+        print("Error in analyze_text:", str(e))
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
