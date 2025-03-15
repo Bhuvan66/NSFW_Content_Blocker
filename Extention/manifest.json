@@ -1,25 +1,43 @@
 {
   "manifest_version": 3,
-  "name": "Twitter Reader",
+  "name": "NSFW Content Blocker",
   "version": "1.0",
-  "description": "An extension to read and manipulate tweets from Twitter.",
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://x.com/*"],
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:5000/"
+  ],
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://x.com/*",
+        "*://twitter.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "extractImages.js"
+      ],
+      "matches": [
+        "*://x.com/*",
+        "*://twitter.com/*"
+      ]
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
-    }
-  },
-"web_accessible_resources": [
-  {
-    "resources": ["swearWord.json"],
-    "matches": ["<all_urls>"]
+    "default_icon": "icon.png"
   }
-]
 }
