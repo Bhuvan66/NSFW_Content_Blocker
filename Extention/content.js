@@ -1,6 +1,7 @@
 (function () {
   const uncensoredTweets = new Map();
   const uncensoredImages = new Map();
+  const processedImages = new Set();
   let lastCallTimeTweets = 0;
   let lastCallTimeImages = 0;
   const cooldownTime = 5000; // 5 seconds cooldown
@@ -181,7 +182,7 @@
       const imageDataPromises = Array.from(imageContainers).map(
         async (image) => {
           const imageUrl = image.src;
-          if (!imageUrl) {
+          if (!imageUrl || processedImages.has(imageUrl)) {
             return null;
           }
 
@@ -189,40 +190,48 @@
             element: image,
             originalUrl: imageUrl,
           });
+
+          // Blur the image initially
+          image.style.filter = "blur(10px)";
+          image.style.opacity = "1";
+
           const isImageNSFW = await checkNSFWImage(imageUrl);
 
-          if (isImageNSFW) {
-            image.style.filter = "blur(10px)";
-            image.style.opacity = "1";
-
-            if (uncensoredImages.has(imageUrl)) {
-              image.style.filter = "none";
-            }
-
-            if (!image.parentElement.querySelector(".uncensor-button")) {
-              const uncensorButton = document.createElement("button");
-              uncensorButton.innerText = "🚫";
-              uncensorButton.classList.add("uncensor-button");
-              uncensorButton.style.marginLeft = "5px";
-              uncensorButton.style.fontSize = "12px";
-              uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
-              uncensorButton.style.border = "none";
-              uncensorButton.style.cursor = "pointer";
-              uncensorButton.style.width = "20px";
-              uncensorButton.style.height = "20px";
-
-              uncensorButton.addEventListener("click", () => {
-                if (image.style.filter === "blur(10px)") {
-                  image.style.filter = "none";
-                  uncensoredImages.set(imageUrl, true);
-                } else {
-                  image.style.filter = "blur(10px)";
-                  uncensoredImages.delete(imageUrl);
-                }
-              });
-              image.parentElement.appendChild(uncensorButton);
-            }
+          if (!isImageNSFW) {
+            image.style.filter = "none";
           }
+
+          if (uncensoredImages.has(imageUrl)) {
+            image.style.filter = "none";
+          }
+
+          if (!image.parentElement.querySelector(".uncensor-button")) {
+            const uncensorButton = document.createElement("button");
+            uncensorButton.innerText = "🚫";
+            uncensorButton.classList.add("uncensor-button");
+            uncensorButton.style.marginLeft = "5px";
+            uncensorButton.style.fontSize = "12px";
+            uncensorButton.style.backgroundColor = "rgba(255, 255, 255, 0.5)";
+            uncensorButton.style.border = "none";
+            uncensorButton.style.cursor = "pointer";
+            uncensorButton.style.width = "20px";
+            uncensorButton.style.height = "20px";
+
+            uncensorButton.addEventListener("click", () => {
+              if (image.style.filter === "blur(10px)") {
+                image.style.filter = "none";
+                uncensoredImages.set(imageUrl, true);
+              } else {
+                image.style.filter = "blur(10px)";
+                uncensoredImages.delete(imageUrl);
+              }
+            });
+            image.parentElement.appendChild(uncensorButton);
+          }
+
+          // Mark the image as processed
+          processedImages.add(imageUrl);
+
           return {
             url: imageUrl,
             status: isImageNSFW ? "NSFW" : "SFW",
