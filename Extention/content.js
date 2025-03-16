@@ -44,7 +44,7 @@
       const response = await fetch("http://127.0.0.1:5000/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: imageUrl }),
+        body: JSON.stringify({ url: imageUrl }),
       });
       const data = await response.json();
       return data && data.prediction === -1;
@@ -193,6 +193,7 @@
 
           if (isImageNSFW) {
             image.style.filter = "blur(10px)";
+            image.style.opacity = "1";
 
             if (uncensoredImages.has(imageUrl)) {
               image.style.filter = "none";

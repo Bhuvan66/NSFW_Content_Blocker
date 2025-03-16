@@ -1,11 +1,11 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS  
+from flask_cors import CORS
 import torch
 from torchvision import transforms
 from transformers import ViTForImageClassification, ViTConfig, AutoTokenizer, AutoModelForSequenceClassification, TextClassificationPipeline
 from PIL import Image
 import io
-import requests  
+import requests
 import os
 
 app = Flask(__name__)
@@ -17,7 +17,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Load ViT image classification model
 config = ViTConfig.from_pretrained("google/vit-base-patch16-224-in21k", num_labels=2)
 model = ViTForImageClassification(config)
-model_path = r"C:\Users\ASUS\Desktop\sideQuest\ML_Programs\imgModelBlocker\trainedModelTrial1.pth"
+model_path = r"ML_Programs\\imgModelBlocker\\trainedModelTrial1.pth"
 model.load_state_dict(torch.load(model_path, map_location=device))
 model.to(device)
 model.eval()
